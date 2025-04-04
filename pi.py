@@ -1,33 +1,27 @@
 import smbus
 import time
 
-# Raspberry Pi I2C bus (bus 1 on most recent Pi models)
 bus = smbus.SMBus(1)
+PICO_ADDRESS = 0x08
 
-# Pico I2C slave address
-PICO_ADDRESS = 8
+def send_message(msg):
+    try:
+        data = list(msg.encode('utf-8')[:16])  # Limit to 16 bytes
+        bus.write_i2c_block_data(PICO_ADDRESS, 0, data)
+        print("Sent:", msg)
+    except OSError as e:
+        print("I2C write error:", e)
 
-# Send a message to the Pico
-def send_message(message):
-    bus.write_i2c_block_data(PICO_ADDRESS, 0, list(message.encode()))  # Send message (encoded as bytes)
-
-# Read a message from the Pico
 def read_message():
     try:
-        message = bus.read_i2c_block_data(PICO_ADDRESS, 0, 32)  # Read 32 bytes
-        return ''.join(chr(i) for i in message).strip()  # Convert byte data back to string
-    except Exception as e:
-        print(f"Error reading: {e}")
-        return ""
+        response = bus.read_i2c_block_data(PICO_ADDRESS, 0, 16)
+        message = ''.join(chr(byte) for byte in response).strip()
+        print("Received:", message)
+    except OSError as e:
+        print("I2C read error:", e)
 
 while True:
-    # Send a message to Pico
-    send_message("Hello from Pi")
-    
-    # Wait and read the response from Pico
-    time.sleep(1)
-    response = read_message()
-    if response:
-        print("Pico says:", response)
-    
+    send_message("Hello Pico")
+    time.sleep(0.5)
+    read_message()
     time.sleep(1)
